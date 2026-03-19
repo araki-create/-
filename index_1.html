@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Becky Lash Tokyo - 投稿管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  ::selection { background: #7C6BF030; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: #F8F7F4;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+  @keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #F8F7F4;
+    --border: #E8E6E1;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6B6A65;
+    --text-tertiary: #9C9B96;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+/* ─── CSV URLs - 集客用のURLは公開後に差し替え ─── */
+const CSV_URLS = {
+  attract: "CSV_URL_ATTRACT_HERE",
+  recruit: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbf0C9VIXdHXtMUrJxmWVnBV46qdlVBdcZ-r8eVk4bgC9ZL61ZlH_xaSt-3N5npxOBaACHBJnyu6yY/pub?gid=1429514140&single=true&output=csv",
+};
+
+const ACCOUNTS = {
+  attract: {
+    id: "attract", label: "集客用",
+    sheetUrl: "https://docs.google.com/spreadsheets/d/15oOCrgXEC_3mqZxtPlT4b47NZD9IbP1Zy-SkQ4ypn5M/edit#gid=91948294",
+    color: "#E1306C", gradient: "linear-gradient(135deg,#833AB4,#E1306C,#F77737)",
+    csvUrl: CSV_URLS.attract,
+    initial: [
+      { no: "01", title: "&healthy", format: "フィード投稿", postDate: "03/07", phase: "delivered", deliveryDate: "03/06", driveUrl: "", history: ["納品完了"] },
+      { no: "02", title: "メロい女 ぱっちり束感♡愛されeyes", format: "フィード投稿", postDate: "03/11", phase: "delivered", deliveryDate: "03/10", driveUrl: "", history: ["納品完了"] },
+      { no: "03", title: "彼ウケ♡多幸感バブみeye4選", format: "フィード投稿", postDate: "03/14", phase: "delivered", deliveryDate: "03/13", driveUrl: "", history: ["納品完了"] },
+      { no: "04", title: "Lush Lift", format: "フィード投稿", postDate: "03/18", phase: "delivered", deliveryDate: "03/17", driveUrl: "", history: ["納品完了"] },
+      { no: "05", title: "春っぽうるちゅるん桜色Pinkネイル３選", format: "フィード投稿", postDate: "03/21", phase: "material", deliveryDate: "03/20", driveUrl: "", history: [] },
+      { no: "06", title: "アイブロウコスメ詳細", format: "フィード投稿", postDate: "03/25", phase: "material", deliveryDate: "03/24", driveUrl: "", history: [] },
+      { no: "07", title: "ズボラ女子必見 1秒で爆盛れeye", format: "フィード投稿", postDate: "03/28", phase: "material", deliveryDate: "03/27", driveUrl: "", history: [] },
+      { no: "08", title: "メイク・美容液 詳細", format: "フィード投稿", postDate: "03/31", phase: "material", deliveryDate: "03/30", driveUrl: "", history: [] },
+    ],
+  },
+  recruit: {
+    id: "recruit", label: "採用用",
+    sheetUrl: "https://docs.google.com/spreadsheets/d/1VYAYvvYYnlljJr-APngbsEnMRrB5gEn0MaQoYedXNfI/edit?gid=1429514140",
+    color: "#3B8FE3", gradient: "linear-gradient(135deg,#3B8FE3,#18B07A)",
+    csvUrl: CSV_URLS.recruit,
+    initial: [
+      { no: "01", title: "採用No.1", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "02", title: "採用No.2", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "03", title: "採用No.3", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "04", title: "採用No.4", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "05", title: "採用No.5", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "06", title: "採用No.6", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "07", title: "採用No.7", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+      { no: "08", title: "採用No.8", format: "フィード投稿", postDate: "", phase: "material", deliveryDate: "", driveUrl: "", history: [] },
+    ],
+  },
+};
+
+/* ─── Phase Definitions ─── */
+const PHASES = [
+  { id: "material", label: "構成確認", color: "#7C6BF0", bg: "#F0EEFF" },
+  { id: "production", label: "制作中", color: "#C98118", bg: "#FDF3E2" },
+  { id: "draft", label: "初稿確認", color: "#E2622E", bg: "#FDF0EB" },
+  { id: "draft_fb", label: "初稿FB", color: "#D4500A", bg: "#FDE8DE" },
+  { id: "final", label: "最終確認", color: "#3B8FE3", bg: "#EAF3FD" },
+  { id: "final_fb", label: "最終FB", color: "#2874C0", bg: "#E0EDFA" },
+  { id: "delivered", label: "納品完了", color: "#18B07A", bg: "#E4F8F0" },
+];
+function phaseInfo(id) { return PHASES.find(p => p.id === id) || { label: "納品完了", color: "#18B07A", bg: "#E4F8F0" }; }
+function phaseIndex(id) { return PHASES.findIndex(p => p.id === id); }
+function phasePct(id) { return ({ material: 0, production: 15, draft: 30, draft_fb: 30, final: 60, final_fb: 60, delivered: 100 })[id] || 0; }
+function cleanTitle(t) { return (t || "").replace(/【.*?】\s*/, ""); }
+
+/* ─── CSV Parser ─── */
+function parseCSV(text) {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim());
+  return lines.slice(1).map(line => {
+    const vals = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === "," && !inQ) { vals.push(cur.trim()); cur = ""; }
+      else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+    return obj;
+  });
+}
+
+function derivePhaseFromRow(row) {
+  // Q列 = TRUE → 納品完了
+  const colQ = Object.values(row)[16] || ""; // Q = 17th column (index 16)
+  if (colQ === "TRUE" || colQ === "true" || colQ === "True") return "delivered";
+  // K列 = 完了 → 最終確認
+  const colK = Object.values(row)[10] || ""; // K = 11th column (index 10)
+  if (colK === "完了") return "final";
+  // I列 = TRUE → 構成確認OK
+  const colI = Object.values(row)[8] || ""; // I = 9th column (index 8)
+  if (colI === "TRUE" || colI === "true" || colI === "True") {
+    const colJ = Object.values(row)[9] || ""; // J = 10th column (index 9)
+    return colJ === "完了" ? "draft" : "production";
+  }
+  return "material";
+}
+
+async function syncFromCSV(csvUrl) {
+  if (!csvUrl || csvUrl.includes("CSV_URL_")) return null; // unconfigured = skip, use initial data
+  // Try direct fetch first, then CORS proxy fallback
+  let resp;
+  try {
+    resp = await fetch(csvUrl);
+    if (!resp.ok) throw new Error("direct failed");
+  } catch {
+    // Fallback: use allorigins proxy
+    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrl);
+    resp = await fetch(proxyUrl);
+    if (!resp.ok) throw new Error("proxy also failed");
+  }
+  const text = await resp.text();
+  const allRows = parseCSV(text);
+  // Skip header rows (typically first 3 rows are headers), take data rows
+  // Find rows that have a number in the first column
+  const dataRows = allRows.filter(r => {
+    const first = Object.values(r)[0] || "";
+    return /^\d+$/.test(first.trim());
+  });
+  return dataRows.map(row => {
+    const vals = Object.values(row);
+    return {
+      no: String(vals[0] || "").padStart(2, "0"),
+      title: cleanTitle(vals[1] || ""),
+      format: vals[2] || "フィード投稿",
+      postDate: vals[3] || "",
+      phase: derivePhaseFromRow(row),
+      deliveryDate: vals[10] || "",
+      driveUrl: "",
+      history: [],
+    };
+  });
+}
+
+/* ─── UI Components ─── */
+function Card({ children, style, accent }) {
+  return React.createElement("div", { style: { background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", borderTop: accent ? `3px solid ${accent}` : undefined, ...style } }, children);
+}
+function Badge({ label, color, bg }) {
+  return React.createElement("span", { style: { fontSize: 10, fontWeight: 600, padding: "2px 10px", borderRadius: 20, background: bg, color, whiteSpace: "nowrap" } }, label);
+}
+function Btn({ children, onClick, color, outline, small, disabled, style: s }) {
+  color = color || "#7C6BF0";
+  return React.createElement("button", { onClick, disabled, style: { padding: small ? "5px 12px" : "8px 18px", borderRadius: 10, fontSize: small ? 11 : 12, fontWeight: 600, fontFamily: "inherit", cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.15s", border: outline ? `1.5px solid ${color}` : "none", background: outline ? "transparent" : `linear-gradient(135deg, ${color}, ${color}CC)`, color: outline ? color : "#fff", opacity: disabled ? 0.5 : 1, boxShadow: outline ? "none" : `0 2px 8px ${color}30`, ...s } }, children);
+}
+
+/* ─── Progress Ring ─── */
+function ProgressMeter({ posts }) {
+  const total = posts.length, done = posts.filter(p => p.phase === "delivered").length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const r = 40, circ = 2 * Math.PI * r, offset = circ - (circ * pct / 100);
+  const color = pct === 100 ? "#18B07A" : pct >= 50 ? "#3B8FE3" : "#E2622E";
+  const groups = [
+    { label: "確認待ち", ids: ["material", "draft", "final"], color: "#E2622E" },
+    { label: "制作中", ids: ["production"], color: "#C98118" },
+    { label: "FB対応中", ids: ["draft_fb", "final_fb"], color: "#D4500A" },
+    { label: "納品完了", ids: ["delivered"], color: "#18B07A" },
+  ];
+  return React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 16, marginBottom: 10 } },
+    React.createElement("div", { style: { position: "relative", width: 88, height: 88, flexShrink: 0 } },
+      React.createElement("svg", { width: 88, height: 88, viewBox: "0 0 88 88" },
+        React.createElement("circle", { cx: 44, cy: 44, r, fill: "none", stroke: "var(--border)", strokeWidth: 7 }),
+        React.createElement("circle", { cx: 44, cy: 44, r, fill: "none", stroke: color, strokeWidth: 7, strokeLinecap: "round", strokeDasharray: circ, strokeDashoffset: offset, transform: "rotate(-90 44 44)", style: { transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" } }),
+      ),
+      React.createElement("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" } },
+        React.createElement("span", { style: { fontSize: 20, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1 } }, pct, React.createElement("span", { style: { fontSize: 11, fontWeight: 400 } }, "%")),
+        React.createElement("span", { style: { fontSize: 9, color: "var(--text-tertiary)", marginTop: 2 } }, `${done}/${total}`),
+      ),
+    ),
+    React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 4 } },
+      groups.map(g => {
+        const cnt = posts.filter(p => g.ids.includes(p.phase)).length;
+        return cnt > 0 ? React.createElement("div", { key: g.label, style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11 } },
+          React.createElement("div", { style: { width: 8, height: 8, borderRadius: 2, background: g.color, flexShrink: 0 } }),
+          React.createElement("span", { style: { color: "var(--text-secondary)", minWidth: 56 } }, g.label),
+          React.createElement("div", { style: { flex: 1, height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden" } },
+            React.createElement("div", { style: { width: `${(cnt/total)*100}%`, height: "100%", background: g.color, borderRadius: 2 } }),
+          ),
+          React.createElement("span", { style: { fontWeight: 600, color: g.color, minWidth: 18, textAlign: "right" } }, cnt),
+        ) : null;
+      }),
+    ),
+  );
+}
+
+/* ─── Post Row (simplified for GitHub Pages) ─── */
+function PostRow({ post }) {
+  const pi = phaseInfo(post.phase);
+  const isDone = post.phase === "delivered";
+  return React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "var(--bg-secondary)", borderRadius: 10, border: "1px solid var(--border)", marginBottom: 4, opacity: isDone ? 0.6 : 1 } },
+    React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: "var(--text-primary)", minWidth: 24 } }, `#${post.no}`),
+    React.createElement("span", { style: { fontSize: 11, color: "var(--text-secondary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, cleanTitle(post.title).slice(0, 18)),
+    React.createElement("div", { style: { width: 48, height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden", flexShrink: 0 } },
+      React.createElement("div", { style: { width: `${phasePct(post.phase)}%`, height: "100%", background: pi.color, borderRadius: 2 } }),
+    ),
+    React.createElement(Badge, { label: pi.label, color: pi.color, bg: pi.bg }),
+    React.createElement("span", { style: { fontSize: 10, color: "var(--text-tertiary)", minWidth: 34, textAlign: "right" } }, post.postDate || "—"),
+  );
+}
+
+/* ─── Action Panel ─── */
+function ActionPanel({ posts }) {
+  const active = posts.filter(p => p.phase !== "delivered");
+  if (!active.length) return React.createElement("div", { style: { textAlign: "center", padding: "16px 0", fontSize: 12, color: "var(--text-tertiary)" } }, "🎉 全投稿の納品完了");
+  const needsReview = active.filter(p => ["material", "draft", "final"].includes(p.phase));
+  const inProd = active.filter(p => p.phase === "production");
+  const actionLabel = { material: "構成を確認", draft: "初稿を確認", final: "最終版を確認" };
+  return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+    needsReview.length > 0 && React.createElement("div", { style: { background: "#FDF0EB", borderRadius: 12, padding: "10px 14px", borderLeft: "3px solid #E2622E" } },
+      React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "#E2622E", marginBottom: 6 } }, `確認が必要 (${needsReview.length})`),
+      needsReview.map(p => React.createElement("div", { key: p.no, style: { display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "#fff", borderRadius: 8, marginBottom: 4, fontSize: 11 } },
+        React.createElement("span", { style: { fontWeight: 700, color: "#E2622E", minWidth: 36 } }, `No.${p.no}`),
+        React.createElement("span", { style: { color: "var(--text-primary)", flex: 1, fontWeight: 500 } }, cleanTitle(p.title).slice(0, 14)),
+        React.createElement("span", { style: { fontSize: 10, color: "#E2622E", fontWeight: 500 } }, actionLabel[p.phase]),
+      )),
+    ),
+    inProd.length > 0 && React.createElement("div", { style: { background: "#FDF3E2", borderRadius: 12, padding: "10px 14px", borderLeft: "3px solid #C98118" } },
+      React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#C98118", marginBottom: 4 } }, `制作中 (${inProd.length}) — 対応不要`),
+      inProd.map(p => React.createElement("div", { key: p.no, style: { fontSize: 11, color: "var(--text-secondary)", padding: "3px 0" } }, `No.${p.no} ${cleanTitle(p.title).slice(0, 14)}`)),
+    ),
+  );
+}
+
+/* ─── Account Section ─── */
+function AccountSection({ account }) {
+  const [posts, setPosts] = useState(account.initial);
+  const [tab, setTab] = useState("overview");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState(null);
+  const [lastSync, setLastSync] = useState(null);
+
+  const doSync = useCallback(async () => {
+    setSyncing(true); setSyncMsg(null);
+    try {
+      const sheetData = await syncFromCSV(account.csvUrl);
+      if (!sheetData) { setSyncing(false); return; } // URL not configured, keep initial data
+      setPosts(prev => {
+        if (!sheetData.length) return prev;
+        return sheetData.map(sheet => {
+          const existing = prev.find(p => p.no === sheet.no);
+          if (!existing) return sheet;
+          const order = ["material", "production", "draft", "draft_fb", "final", "final_fb", "delivered"];
+          if (order.indexOf(sheet.phase) > order.indexOf(existing.phase)) {
+            return { ...existing, phase: sheet.phase, title: sheet.title || existing.title, postDate: sheet.postDate || existing.postDate, history: [...(existing.history || []), `シート同期: ${phaseInfo(sheet.phase).label}`] };
+          }
+          return { ...existing, title: sheet.title || existing.title, postDate: sheet.postDate || existing.postDate };
+        });
+      });
+      setLastSync(new Date()); setSyncMsg("✓");
+    } catch (e) { setSyncMsg("—"); console.error(e); }
+    setSyncing(false); setTimeout(() => setSyncMsg(null), 4000);
+  }, [account.csvUrl]);
+
+  useEffect(() => { doSync(); const iv = setInterval(doSync, 60000); return () => clearInterval(iv); }, [doSync]);
+
+  const batch1 = posts.slice(0, 8);
+  const currentPosts = batch1;
+
+  return React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+    /* Header */
+    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } },
+      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+        React.createElement("div", { style: { width: 32, height: 32, borderRadius: 10, background: account.gradient, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 700, boxShadow: `0 2px 8px ${account.color}30` } }, account.label.slice(0, 1)),
+        React.createElement("div", null,
+          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--text-primary)" } }, account.label),
+          React.createElement("div", { style: { fontSize: 10, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 4 } },
+            "月8投稿",
+            lastSync && React.createElement("span", { style: { color: "#18B07A", fontWeight: 500 } }, `· ${lastSync.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`),
+            syncMsg && React.createElement("span", { style: { color: syncMsg === "✓" ? "#18B07A" : "var(--text-tertiary)", fontWeight: 600 } }, syncMsg),
+          ),
+        ),
+      ),
+      React.createElement("div", { style: { display: "flex", gap: 4 } },
+        React.createElement(Btn, { small: true, outline: true, color: "var(--text-tertiary)", onClick: doSync, disabled: syncing, style: { boxShadow: "none", padding: "3px 8px", fontSize: 10 } }, syncing ? "..." : "↻"),
+        React.createElement("a", { href: account.sheetUrl, target: "_blank", rel: "noopener noreferrer", style: { padding: "3px 8px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", textDecoration: "none", display: "flex", alignItems: "center" } }, "シート↗"),
+      ),
+    ),
+    /* Progress */
+    React.createElement(ProgressMeter, { posts: currentPosts }),
+    /* Tabs */
+    React.createElement("div", { style: { display: "flex", marginBottom: 10, borderBottom: "1.5px solid var(--border)" } },
+      [{ id: "overview", l: "⚡ アクション" }, { id: "posts", l: "📋 投稿一覧" }].map(t =>
+        React.createElement("button", { key: t.id, onClick: () => setTab(t.id), style: { padding: "6px 14px", fontSize: 11, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? "var(--text-primary)" : "var(--text-tertiary)", background: "none", border: "none", borderBottom: tab === t.id ? "2px solid var(--text-primary)" : "2px solid transparent", cursor: "pointer", fontFamily: "inherit", marginBottom: -1.5 } }, t.l),
+      ),
+    ),
+    /* Content */
+    tab === "overview" && React.createElement(ActionPanel, { posts: currentPosts }),
+    tab === "posts" && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 0 } },
+      currentPosts.map(p => React.createElement(PostRow, { key: p.no, post: p })),
+    ),
+  );
+}
+
+/* ─── Main App ─── */
+function App() {
+  return React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "12px 16px", fontFamily: "'Noto Sans JP', sans-serif" } },
+    /* Header */
+    React.createElement("div", { className: "fade-in", style: { display: "flex", alignItems: "center", gap: 14, marginBottom: 20 } },
+      React.createElement("div", { style: { width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg,#833AB4,#E1306C,#F77737)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, boxShadow: "0 3px 12px rgba(225,48,108,0.25)" } }, "IG"),
+      React.createElement("div", null,
+        React.createElement("h1", { style: { fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 } }, "Becky Lash Tokyo"),
+        React.createElement("div", { style: { fontSize: 11, color: "var(--text-tertiary)", marginTop: 2 } }, "フィード投稿管理 · 集客 & 採用"),
+      ),
+    ),
+    /* Two columns */
+    React.createElement("div", { className: "fade-in", style: { display: "flex", gap: 16, alignItems: "flex-start", animationDelay: "0.1s", flexWrap: "wrap" } },
+      React.createElement(Card, { style: { flex: "1 1 380px", padding: "16px 18px", minWidth: 0 } },
+        React.createElement(AccountSection, { account: ACCOUNTS.attract }),
+      ),
+      React.createElement(Card, { style: { flex: "1 1 380px", padding: "16px 18px", minWidth: 0 } },
+        React.createElement(AccountSection, { account: ACCOUNTS.recruit }),
+      ),
+    ),
+    /* Footer */
+    React.createElement("div", { style: { marginTop: 18, textAlign: "center", fontSize: 10, color: "var(--text-tertiary)", paddingBottom: 8 } }, "1分ごとにシート自動同期 · 手動同期は ↻ ボタン"),
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
